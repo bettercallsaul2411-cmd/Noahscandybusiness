@@ -1,0 +1,10 @@
+{
+  "name": "noahs-candy-business",
+  "version": "1.0.0",
+  "description": "Candy business demo app with moderated community board",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  }
+}
