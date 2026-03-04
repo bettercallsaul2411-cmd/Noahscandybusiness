@@ -178,7 +178,7 @@ function getHostCandidates() {
     return [REQUESTED_HOST];
   }
 
-  return ["::", "0.0.0.0", "127.0.0.1"];
+  return ["127.0.0.1", "::", "0.0.0.0"];
 }
 
 function listenOnHostAndPort(host, port) {
@@ -193,9 +193,13 @@ function listenOnHostAndPort(host, port) {
       resolve();
     };
 
+    const listenOptions = host === "::"
+      ? { host, port, ipv6Only: false }
+      : { host, port };
+
     server.once("error", onError);
     server.once("listening", onListening);
-    server.listen(port, host);
+    server.listen(listenOptions);
   });
 }
 

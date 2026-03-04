@@ -26,8 +26,8 @@ If `http://localhost:3000` does not open:
 
 - Run `npm start` from the project folder first.
 - If needed, force localhost-only mode: `npm run start:local`
-- If a host/port combo fails, the app keeps trying higher ports automatically and prints the working URL in the terminal.
+- The server now prioritizes localhost loopback binding and keeps trying higher ports automatically until it finds a working one.
 - Try `http://127.0.0.1:<port>` or `http://[::1]:<port>` using the printed port.
 - Quick health check: `curl http://127.0.0.1:<port>/health`
 
-- If your machine prefers IPv6 localhost, start with: `HOST=:: npm start`
+- If your machine prefers IPv6 localhost, start with: `HOST=:: npm start` (uses dual-stack where supported).
