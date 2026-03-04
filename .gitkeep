@@ -1,0 +1,164 @@
+!doctype html>
+     2	<html lang="en">
+     3	  <head>
+     4	    <meta charset="UTF-8" />
+     5	    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     6	    <title>Noah's Candy Business</title>
+     7	    <link rel="stylesheet" href="styles.css" />
+     8	  </head>
+     9	  <body>
+    10	    <main class="container">
+    11	      <h1>🍭 Noah's Candy Business</h1>
+    12	      <p class="subtitle">Community board with moderation and admin delete tools.</p>
+    13	
+    14	      <section class="panel">
+    15	        <h2>Share with the community</h2>
+    16	        <form id="postForm">
+    17	          <label>
+    18	            Name
+    19	            <input id="author" required maxlength="40" />
+    20	          </label>
+    21	
+    22	          <label>
+    23	            Category
+    24	            <select id="category" required>
+    25	              <option value="">Select category...</option>
+    26	              <option>Review</option>
+    27	              <option>Flavor Request</option>
+    28	              <option>Question</option>
+    29	              <option>Event</option>
+    30	            </select>
+    31	          </label>
+    32	
+    33	          <label>
+    34	            Message
+    35	            <textarea id="message" required maxlength="220"></textarea>
+    36	          </label>
+    37	
+    38	          <button type="submit">Post Message</button>
+    39	        </form>
+    40	        <p id="feedback" aria-live="polite"></p>
+    41	      </section>
+    42	
+    43	      <section class="panel">
+    44	        <h2>Community Board</h2>
+    45	        <div class="filters">
+    46	          <label>
+    47	            Filter by category
+    48	            <select id="categoryFilter">
+    49	              <option value="all">All</option>
+    50	              <option value="Review">Review</option>
+    51	              <option value="Flavor Request">Flavor Request</option>
+    52	              <option value="Question">Question</option>
+    53	              <option value="Event">Event</option>
+    54	            </select>
+    55	          </label>
+    56	        </div>
+    57	        <ul id="posts"></ul>
+    58	      </section>
+    59	
+    60	      <section class="panel admin">
+    61	        <h2>Admin moderation</h2>
+    62	        <p>Admins can delete any post directly from the board.</p>
+    63	        <p id="blockedWords"></p>
+    64	      </section>
+    65	    </main>
+    66	
+    67	    <script src="app.js"></script>
+    68	  </body>
+    69	</html>
+     1	const postsElement = document.getElementById("posts");
+     2	const postForm = document.getElementById("postForm");
+     3	const feedback = document.getElementById("feedback");
+     4	const categoryFilter = document.getElementById("categoryFilter");
+     5	const blockedWordsElement = document.getElementById("blockedWords");
+     6	
+     7	let allPosts = [];
+     8	
+     9	function formatDate(dateValue) {
+    10	  return new Date(dateValue).toLocaleString();
+    11	}
+    12	
+    13	async function loadBlockedWords() {
+    14	  const response = await fetch("/api/blocked-words");
+    15	  const data = await response.json();
+    16	  blockedWordsElement.textContent = `Blocked words: ${data.blockedWords.join(", ")}`;
+    17	}
+    18	
+    19	function renderPosts() {
+    20	  const selectedCategory = categoryFilter.value;
+    21	  const filteredPosts =
+    22	    selectedCategory === "all"
+    23	      ? allPosts
+    24	      : allPosts.filter((post) => post.category === selectedCategory);
+    25	
+    26	  postsElement.innerHTML = "";
+    27	
+    28	  if (!filteredPosts.length) {
+    29	    postsElement.innerHTML = "<li>No posts found for this category.</li>";
+    30	    return;
+    31	  }
+    32	
+    33	  for (const post of filteredPosts) {
+    34	    const listItem = document.createElement("li");
+    35	    listItem.innerHTML = `
+    36	      <div class="meta">
+    37	        <strong>${post.author}</strong>
+    38	        <span class="tag">${post.category}</span>
+    39	      </div>
+    40	      <p>${post.message}</p>
+    41	      <div class="meta">
+    42	        <small>${formatDate(post.createdAt)}</small>
+    43	        <button data-id="${post.id}" type="button">Delete</button>
+    44	      </div>
+    45	    `;
+    46	
+    47	    listItem.querySelector("button").addEventListener("click", async () => {
+    48	      await fetch(`/api/posts/${post.id}`, { method: "DELETE" });
+    49	      await refreshPosts();
+    50	    });
+    51	
+    52	    postsElement.appendChild(listItem);
+    53	  }
+    54	}
+    55	
+    56	async function refreshPosts() {
+    57	  const response = await fetch("/api/posts");
+    58	  const data = await response.json();
+    59	  allPosts = data.posts;
+    60	  renderPosts();
+    61	}
+    62	
+    63	postForm.addEventListener("submit", async (event) => {
+    64	  event.preventDefault();
+    65	  feedback.textContent = "";
+    66	
+    67	  const payload = {
+    68	    author: document.getElementById("author").value,
+    69	    category: document.getElementById("category").value,
+    70	    message: document.getElementById("message").value
+    71	  };
+    72	
+    73	  const response = await fetch("/api/posts", {
+    74	    method: "POST",
+    75	    headers: { "Content-Type": "application/json" },
+    76	    body: JSON.stringify(payload)
+    77	  });
+    78	
+    79	  if (!response.ok) {
+    80	    const error = await response.json();
+    81	    feedback.textContent = `${error.error} ${error.sanitizedPreview ? `(${error.sanitizedPreview})` : ""}`;
+    82	    feedback.style.color = "#b00020";
+    83	    return;
+    84	  }
+    85	
+    86	  postForm.reset();
+    87	  feedback.textContent = "Message posted successfully!";
+    88	  feedback.style.color = "#0d7a46";
+    89	  await refreshPosts();
+    90	});
+    91	
+    92	categoryFilter.addEventListener("change", renderPosts);
+    93	
+    94	loadBlockedWords();
+    95	refreshPosts();
