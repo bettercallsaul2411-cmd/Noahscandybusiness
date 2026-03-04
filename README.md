@@ -26,7 +26,7 @@ If `http://localhost:3000` does not open:
 
 - Run `npm start` from the project folder first.
 - If needed, force localhost-only mode: `npm run start:local`
-- If port 3000 is busy, the app automatically picks the next available port and prints it in the terminal.
+- If a host/port combo fails, the app keeps trying higher ports automatically and prints the working URL in the terminal.
 - Try `http://127.0.0.1:<port>` or `http://[::1]:<port>` using the printed port.
 - Quick health check: `curl http://127.0.0.1:<port>/health`
 

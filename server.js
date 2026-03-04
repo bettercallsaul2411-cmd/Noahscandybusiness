@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
-const net = require("net");
 const {
   blockedWords,
   includesBlockedWord,
@@ -9,6 +8,7 @@ const {
 } = require("./lib/moderation");
 
 const DEFAULT_PORT = Number(process.env.PORT) || 3000;
+const MAX_PORT_ATTEMPTS_PER_HOST = 50;
 const REQUESTED_HOST = process.env.HOST;
 const communityPosts = [];
 const workerApplications = [];
@@ -181,24 +181,21 @@ function getHostCandidates() {
   return ["::", "0.0.0.0", "127.0.0.1"];
 }
 
-function findAvailablePort(startPort, host) {
+function listenOnHostAndPort(host, port) {
   return new Promise((resolve, reject) => {
-    const tester = net.createServer();
-
-    tester.once("error", (error) => {
-      if (error.code === "EADDRINUSE") {
-        resolve(findAvailablePort(startPort + 1, host));
-        return;
-      }
-
+    const onError = (error) => {
+      server.off("listening", onListening);
       reject(error);
-    });
+    };
 
-    tester.once("listening", () => {
-      tester.close(() => resolve(startPort));
-    });
+    const onListening = () => {
+      server.off("error", onError);
+      resolve();
+    };
 
-    tester.listen(startPort, host);
+    server.once("error", onError);
+    server.once("listening", onListening);
+    server.listen(port, host);
   });
 }
 
@@ -206,23 +203,31 @@ async function startServer() {
   const hosts = getHostCandidates();
 
   for (const host of hosts) {
-    try {
-      const port = await findAvailablePort(DEFAULT_PORT, host);
-      if (port !== DEFAULT_PORT) {
-        console.warn(`Port ${DEFAULT_PORT} is in use. Starting on ${port} instead.`);
-      }
+    let port = DEFAULT_PORT;
+    for (let attempt = 0; attempt < MAX_PORT_ATTEMPTS_PER_HOST; attempt += 1) {
+      try {
+        await listenOnHostAndPort(host, port);
 
-      server.listen(port, host, () => {
+        if (port !== DEFAULT_PORT) {
+          console.warn(`Port ${DEFAULT_PORT} is in use. Starting on ${port} instead.`);
+        }
+
         if (REQUESTED_HOST) {
           console.log(`Using host ${REQUESTED_HOST}`);
         } else {
           console.log(`Using host ${host}`);
         }
         printLocalUrls(port);
-      });
-      return;
-    } catch (error) {
-      console.warn(`Host ${host} unavailable: ${error.message}`);
+        return;
+      } catch (error) {
+        if (error.code === "EADDRINUSE") {
+          port += 1;
+          continue;
+        }
+
+        console.warn(`Host ${host} unavailable: ${error.message}`);
+        break;
+      }
     }
   }
 
