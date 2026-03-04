@@ -7,7 +7,8 @@ const {
   maskBlockedWords
 } = require("./lib/moderation");
 
-const PORT = process.env.PORT || 3000;
+const DEFAULT_PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || "0.0.0.0";
 const communityPosts = [];
 const workerApplications = [];
 let nextId = 1;
@@ -71,6 +72,10 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && requestUrl.pathname === "/api/posts") {
     return sendJson(res, 200, { posts: communityPosts });
+  }
+
+  if (req.method === "GET" && requestUrl.pathname === "/health") {
+    return sendJson(res, 200, { ok: true });
   }
 
   if (req.method === "POST" && requestUrl.pathname === "/api/posts") {
@@ -160,6 +165,22 @@ const server = http.createServer(async (req, res) => {
   return sendJson(res, 404, { error: "Not found" });
 });
 
-server.listen(PORT, () => {
-  console.log(`Candy Business app running at http://localhost:${PORT}`);
+function startServer(port) {
+  server.listen(port, HOST, () => {
+    console.log(`Candy Business app running at:`);
+    console.log(`- http://localhost:${port}`);
+    console.log(`- http://127.0.0.1:${port}`);
+  });
+}
+
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`Port ${DEFAULT_PORT} is already in use.`);
+    console.error("Set a different port, for example: PORT=3001 npm start");
+    process.exit(1);
+  }
+
+  throw error;
 });
+
+startServer(DEFAULT_PORT);
