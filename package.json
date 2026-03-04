@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:local": "HOST=127.0.0.1 PORT=3000 node server.js",
     "test": "node --test"
   }
 }

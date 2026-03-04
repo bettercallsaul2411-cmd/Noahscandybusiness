@@ -9,7 +9,7 @@ const {
 } = require("./lib/moderation");
 
 const DEFAULT_PORT = Number(process.env.PORT) || 3000;
-const HOST = process.env.HOST || "::";
+const REQUESTED_HOST = process.env.HOST;
 const communityPosts = [];
 const workerApplications = [];
 let nextId = 1;
@@ -173,13 +173,21 @@ function printLocalUrls(port) {
   console.log(`- http://[::1]:${port}`);
 }
 
-function findAvailablePort(startPort) {
+function getHostCandidates() {
+  if (REQUESTED_HOST) {
+    return [REQUESTED_HOST];
+  }
+
+  return ["::", "0.0.0.0", "127.0.0.1"];
+}
+
+function findAvailablePort(startPort, host) {
   return new Promise((resolve, reject) => {
     const tester = net.createServer();
 
     tester.once("error", (error) => {
       if (error.code === "EADDRINUSE") {
-        resolve(findAvailablePort(startPort + 1));
+        resolve(findAvailablePort(startPort + 1, host));
         return;
       }
 
@@ -190,24 +198,36 @@ function findAvailablePort(startPort) {
       tester.close(() => resolve(startPort));
     });
 
-    tester.listen(startPort, HOST);
+    tester.listen(startPort, host);
   });
 }
 
 async function startServer() {
-  try {
-    const port = await findAvailablePort(DEFAULT_PORT);
-    if (port !== DEFAULT_PORT) {
-      console.warn(`Port ${DEFAULT_PORT} is in use. Starting on ${port} instead.`);
-    }
+  const hosts = getHostCandidates();
 
-    server.listen(port, HOST, () => {
-      printLocalUrls(port);
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error.message);
-    process.exit(1);
+  for (const host of hosts) {
+    try {
+      const port = await findAvailablePort(DEFAULT_PORT, host);
+      if (port !== DEFAULT_PORT) {
+        console.warn(`Port ${DEFAULT_PORT} is in use. Starting on ${port} instead.`);
+      }
+
+      server.listen(port, host, () => {
+        if (REQUESTED_HOST) {
+          console.log(`Using host ${REQUESTED_HOST}`);
+        } else {
+          console.log(`Using host ${host}`);
+        }
+        printLocalUrls(port);
+      });
+      return;
+    } catch (error) {
+      console.warn(`Host ${host} unavailable: ${error.message}`);
+    }
   }
+
+  console.error("Failed to start server on any host candidate.");
+  process.exit(1);
 }
 
 startServer();
