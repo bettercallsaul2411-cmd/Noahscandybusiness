@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noah's Candy Business</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>🍭 Noah's Candy Business</h1>
+      <p class="subtitle">Community board with moderation and admin delete tools.</p>
+
+      <section class="panel">
+        <h2>Share with the community</h2>
+        <form id="postForm">
+          <label>
+            Name
+            <input id="author" required maxlength="40" />
+          </label>
+
+          <label>
+            Category
+            <select id="category" required>
+              <option value="">Select category...</option>
+              <option>Review</option>
+              <option>Flavor Request</option>
+              <option>Question</option>
+              <option>Event</option>
+            </select>
+          </label>
+
+          <label>
+            Message
+            <textarea id="message" required maxlength="220"></textarea>
+          </label>
+
+          <button type="submit">Post Message</button>
+        </form>
+        <p id="feedback" aria-live="polite"></p>
+      </section>
+
+      <section class="panel">
+        <h2>Language Review Filter</h2>
+        <p>Check a message before posting to make sure the language is clean.</p>
+        <form id="reviewForm">
+          <label>
+            Review text
+            <textarea id="reviewMessage" maxlength="220" placeholder="Type text to review"></textarea>
+          </label>
+          <button type="submit">Review Language</button>
+        </form>
+        <p id="reviewFeedback" aria-live="polite"></p>
+      </section>
+
+      <section class="panel">
+        <h2>Community Board</h2>
+        <div class="filters">
+          <label>
+            Filter by category
+            <select id="categoryFilter">
+              <option value="all">All</option>
+              <option value="Review">Review</option>
+              <option value="Flavor Request">Flavor Request</option>
+              <option value="Question">Question</option>
+              <option value="Event">Event</option>
+            </select>
+          </label>
+        </div>
+        <ul id="posts"></ul>
+      </section>
+
+      <section class="panel">
+        <h2>Play: Candy Catch</h2>
+        <p>Click <strong>Play</strong>, then tap candies as they pop up.</p>
+        <div class="hud">
+          <span>Score: <strong id="gameScore">0</strong></span>
+          <span>Time: <strong id="gameTimer">30</strong>s</span>
+        </div>
+        <button id="startGame" type="button">Play</button>
+        <p id="gameStatus">Ready to play?</p>
+        <div id="gameBoard" aria-label="Candy Catch Game Board"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Join Our Team</h2>
+        <button id="applyButton" type="button">Apply</button>
+        <button id="workerButton" type="button" hidden>Worker</button>
+        <form id="workerForm" hidden>
+          <label>
+            School ID
+            <input id="schoolId" required maxlength="30" />
+          </label>
+          <label>
+            Name
+            <input id="workerName" required maxlength="50" />
+          </label>
+          <button type="submit">Submit Worker Application</button>
+        </form>
+        <p id="workerFeedback" aria-live="polite"></p>
+      </section>
+
+      <section class="panel admin">
+        <h2>Admin moderation</h2>
+        <p>Admins can delete any post directly from the board.</p>
+        <p id="blockedWords"></p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+    <script src="game.js"></script>
+  </body>
+</html>
